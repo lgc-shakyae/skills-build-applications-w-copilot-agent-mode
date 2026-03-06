@@ -1,24 +1,33 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from .views import UserList, TeamList, ActivityList, LeaderboardList, WorkoutList
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework.reverse import reverse
+import os
 
 @api_view(['GET'])
 def api_root(request, format=None):
+    codespace_name = os.environ.get('CODESPACE_NAME')
+    if codespace_name:
+        base_url = f"https://{codespace_name}-8000.app.github.dev/api/"
+    else:
+        base_url = "http://localhost:8000/api/"
     return Response({
-        'users': reverse('user-list', request=request, format=format),
-        'teams': reverse('team-list', request=request, format=format),
-        'activities': reverse('activity-list', request=request, format=format),
-        'leaderboard': reverse('leaderboard-list', request=request, format=format),
-        'workouts': reverse('workout-list', request=request, format=format),
+        'users': base_url + 'users/',
+        'teams': base_url + 'teams/',
+        'activities': base_url + 'activities/',
+        'leaderboard': base_url + 'leaderboard/',
+        'workouts': base_url + 'workouts/',
     })
+
+router = DefaultRouter()
+router.register(r'users', UserList, basename='user')
+router.register(r'teams', TeamList, basename='team')
+router.register(r'activities', ActivityList, basename='activity')
+router.register(r'leaderboard', LeaderboardList, basename='leaderboard')
+router.register(r'workouts', WorkoutList, basename='workout')
 
 urlpatterns = [
     path('', api_root, name='api-root'),
-    path('users/', UserList.as_view(), name='user-list'),
-    path('teams/', TeamList.as_view(), name='team-list'),
-    path('activities/', ActivityList.as_view(), name='activity-list'),
-    path('leaderboard/', LeaderboardList.as_view(), name='leaderboard-list'),
-    path('workouts/', WorkoutList.as_view(), name='workout-list'),
+    path('', include(router.urls)),
 ]
